@@ -1,38 +1,43 @@
-import os
 import json
+import os
 import boto3
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
-s3 = boto3.client("s3")
-RAW_BUCKET_NAME = os.getenv("RAW_BUCKET_NAME")
+FIREHOSE_NAME = os.environ["FIREHOSE_NAME"]
+API_URL = "https://www.balldontlie.io/api/v1/games"
+firehose = boto3.client("firehose")
 
 
 def lambda_handler(event, context):
+    # Get date range for last 24 hours
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=1)
+
+    params = {
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "per_page": 100,
+    }
+
     try:
-        # Fetch games from Balldontlie API (last 1 day)
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        url = f"https://www.balldontlie.io/api/v1/games?start_date={today}&end_date={today}&per_page=100"
-        response = requests.get(url)
+        response = requests.get(API_URL, params=params)
         response.raise_for_status()
+        data = response.json()["data"]
 
-        games_data = response.json().get("data", [])
-        if not games_data:
-            return {"statusCode": 204, "body": json.dumps("No games found for today.")}
+        if not data:
+            print("No games found in the last 24 hours.")
+            return {"statusCode": 204, "body": "No games to ingest."}
 
-        # Save to S3
-        file_key = f"raw/games/{today}.json"
-        s3.put_object(
-            Bucket=RAW_BUCKET_NAME,
-            Key=file_key,
-            Body=json.dumps(games_data),
-            ContentType="application/json",
-        )
+        for game in data:
+            record = json.dumps(game) + "\n"
+            firehose.put_record(
+                DeliveryStreamName=FIREHOSE_NAME, Record={"Data": record}
+            )
 
-        return {
-            "statusCode": 200,
-            "body": f"{len(games_data)} games stored in S3: {file_key}",
-        }
+        print(f"Successfully ingested {len(data)} records.")
+        return {"statusCode": 200, "body": f"Successfully ingested {len(data)} games."}
 
     except Exception as e:
-        return {"statusCode": 500, "body": json.dumps(str(e))}
+        print(f"Error fetching or sending data: {e}")
+        return {"statusCode": 500, "body": str(e)}
