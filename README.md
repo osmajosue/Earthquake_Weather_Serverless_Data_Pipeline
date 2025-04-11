@@ -1,7 +1,7 @@
 # NBA Serverless Data Pipeline (Terraform + AWS + Grafana)
 
 ## 📌 Overview
-A 100% serverless data engineering project built on AWS using Terraform in under 24 hours. It ingests data from the **Balldontlie NBA API**, processes and transforms it using AWS Glue, analyzes it via Athena, and visualizes key insights in Grafana.
+A 100% serverless data engineering project built on AWS using Terraform. It ingests data from the **Balldontlie NBA API**, processes and transforms it using AWS Glue, analyzes it via Athena, and visualizes key insights in Grafana.
 
 ---
 
