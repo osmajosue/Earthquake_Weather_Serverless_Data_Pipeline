@@ -69,13 +69,14 @@ resource "aws_iam_role_policy_attachment" "firehose_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
-resource "aws_kinesis_firehose_delivery_stream" "nba_stream" {
-  name        = "${var.project_prefix}-firehose"
+resource "aws_kinesis_firehose_delivery_stream" "games_stream" {
+  name        = "${var.project_prefix}-games-stream"
   destination = "extended_s3"
 
   extended_s3_configuration {
-    role_arn           = aws_iam_role.firehose_role.arn
+    role_arn           = aws_iam_role.firehose_games_role.arn
     bucket_arn         = aws_s3_bucket.raw_data.arn
+    prefix             = "games/"
     buffering_interval = 60
     compression_format = "UNCOMPRESSED"
 
@@ -83,39 +84,117 @@ resource "aws_kinesis_firehose_delivery_stream" "nba_stream" {
       enabled = false
     }
   }
-}
-
-resource "aws_lambda_function" "nba_lambda" {
-  function_name = "${var.project_prefix}_fetch_nba_data"
-  filename      = "${path.module}/lambda.zip"
-  handler       = "handler.lambda_handler"
-  runtime       = "python3.10"
-  role          = aws_iam_role.lambda_exec_role.arn
-  timeout       = 30
-  environment {
-    variables = {
-      FIREHOSE_NAME = aws_kinesis_firehose_delivery_stream.nba_stream.name
-    }
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_cloudwatch_event_rule" "daily_trigger" {
-  name                = "${var.project_prefix}_daily_trigger"
+resource "aws_kinesis_firehose_delivery_stream" "stats_stream" {
+  name        = "${var.project_prefix}-stats-stream"
+  destination = "extended_s3"
+
+  extended_s3_configuration {
+    role_arn           = aws_iam_role.firehose_stats_role.arn
+    bucket_arn         = aws_s3_bucket.raw_data.arn
+    prefix             = "stats/"
+    buffering_interval = 60
+    compression_format = "UNCOMPRESSED"
+
+    cloudwatch_logging_options {
+      enabled = false
+    }
+  }
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+
+resource "aws_lambda_function" "fetch_games" {
+  function_name    = "${var.project_prefix}_fetch_games"
+  filename         = "${path.module}/fetch_games.zip"
+  source_code_hash = filebase64sha256("${path.module}/fetch_games.zip")
+  handler          = "fetch_games_handler.lambda_handler"
+  runtime          = "python3.10"
+  role             = aws_iam_role.lambda_exec_role.arn
+  timeout          = 30
+
+  environment {
+    variables = {
+      FIREHOSE_NAME = aws_kinesis_firehose_delivery_stream.games_stream.name
+    }
+  }
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_lambda_function" "fetch_stats" {
+  function_name    = "${var.project_prefix}_fetch_stats"
+  filename         = "${path.module}/fetch_stats.zip"
+  source_code_hash = filebase64sha256("${path.module}/fetch_stats.zip")
+  handler          = "fetch_stats_handler.lambda_handler"
+  runtime          = "python3.10"
+  role             = aws_iam_role.lambda_exec_role.arn
+  timeout          = 30
+
+  environment {
+    variables = {
+      FIREHOSE_NAME = aws_kinesis_firehose_delivery_stream.stats_stream.name
+    }
+  }
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "games_trigger" {
+  name                = "${var.project_prefix}_games_trigger"
   schedule_expression = "rate(1 day)"
 }
 
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  rule      = aws_cloudwatch_event_rule.daily_trigger.name
-  target_id = "NBAIngestLambda"
-  arn       = aws_lambda_function.nba_lambda.arn
+resource "aws_cloudwatch_event_target" "games_lambda_target" {
+  rule      = aws_cloudwatch_event_rule.games_trigger.name
+  target_id = "NBAFetchGamesLambda"
+  arn       = aws_lambda_function.fetch_games.arn
 }
 
-resource "aws_lambda_permission" "allow_eventbridge" {
-  statement_id  = "AllowExecutionFromEventBridge"
+resource "aws_lambda_permission" "allow_games_eventbridge" {
+  statement_id  = "AllowGamesFromEventBridge"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.nba_lambda.function_name
+  function_name = aws_lambda_function.fetch_games.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.daily_trigger.arn
+  source_arn    = aws_cloudwatch_event_rule.games_trigger.arn
+}
+
+resource "aws_cloudwatch_event_rule" "stats_trigger" {
+  name                = "${var.project_prefix}_stats_trigger"
+  schedule_expression = "rate(1 day)"
+}
+
+resource "aws_cloudwatch_event_target" "stats_lambda_target" {
+  rule      = aws_cloudwatch_event_rule.stats_trigger.name
+  target_id = "NBAFetchStatsLambda"
+  arn       = aws_lambda_function.fetch_stats.arn
+}
+
+resource "aws_lambda_permission" "allow_stats_eventbridge" {
+  statement_id  = "AllowStatsFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.fetch_stats.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.stats_trigger.arn
 }
 
 resource "aws_glue_catalog_database" "nba_db" {
