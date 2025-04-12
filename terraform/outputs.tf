@@ -13,14 +13,24 @@ output "scripts_bucket" {
   value       = aws_s3_bucket.script_bucket.bucket
 }
 
-output "firehose_stream_name" {
-  description = "Name of the Kinesis Firehose delivery stream"
-  value       = aws_kinesis_firehose_delivery_stream.nba_stream.name
+output "games_lambda_name" {
+  description = "Lambda function for fetching game data"
+  value       = aws_lambda_function.fetch_games.function_name
 }
 
-output "lambda_function_name" {
-  description = "Lambda function that fetches NBA data"
-  value       = aws_lambda_function.nba_lambda.function_name
+output "stats_lambda_name" {
+  description = "Lambda function for fetching player stats"
+  value       = aws_lambda_function.fetch_stats.function_name
+}
+
+output "games_firehose_stream" {
+  description = "Kinesis Firehose for game data"
+  value       = aws_kinesis_firehose_delivery_stream.games_stream.name
+}
+
+output "stats_firehose_stream" {
+  description = "Kinesis Firehose for stats data"
+  value       = aws_kinesis_firehose_delivery_stream.stats_stream.name
 }
 
 output "glue_job_name" {

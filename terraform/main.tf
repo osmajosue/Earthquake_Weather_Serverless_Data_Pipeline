@@ -52,16 +52,40 @@ resource "aws_iam_role_policy_attachment" "lambda_firehose_policy_attach" {
   policy_arn = aws_iam_policy.lambda_firehose_policy.arn
 }
 
-resource "aws_iam_role" "firehose_role" {
-  name = "${var.project_prefix}_firehose_role"
+resource "aws_iam_role" "firehose_games_role" {
+  name = "${var.project_prefix}_firehose_games_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect    = "Allow",
+      Effect = "Allow",
       Principal = { Service = "firehose.amazonaws.com" },
-      Action    = "sts:AssumeRole"
+      Action = "sts:AssumeRole"
     }]
   })
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_iam_role" "firehose_stats_role" {
+  name = "${var.project_prefix}_firehose_stats_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = { Service = "firehose.amazonaws.com" },
+      Action = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "firehose_policy" {
