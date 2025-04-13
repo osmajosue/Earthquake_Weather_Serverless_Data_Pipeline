@@ -31,7 +31,7 @@ A 100% serverless data engineering project built on AWS using Terraform. It inge
 
 ## 🧱 Folder Structure
 ```bash
-nba-pipeline/
+NBA_Serverless_AWS_DataPipeline/
 ├── terraform/
 │   ├── main.tf
 │   ├── variables.tf
@@ -39,7 +39,8 @@ nba-pipeline/
 │   ├── lambda.zip
 │   └── glue_job.py
 ├── lambda/
-│   └── handler.py
+│   └── fetch_games_handler.py
+    └── fetch_stats_handler.py
 ├── athena/
 │   └── queries.sql
 ├── grafana/
