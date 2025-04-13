@@ -88,11 +88,6 @@ resource "aws_iam_role" "firehose_stats_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "firehose_policy" {
-  role       = aws_iam_role.firehose_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
 resource "aws_kinesis_firehose_delivery_stream" "games_stream" {
   name        = "${var.project_prefix}-games-stream"
   destination = "extended_s3"
@@ -151,6 +146,7 @@ resource "aws_lambda_function" "fetch_games" {
   environment {
     variables = {
       FIREHOSE_NAME = aws_kinesis_firehose_delivery_stream.games_stream.name
+      API_KEY       = var.balldontlie_api_key
     }
   }
 
@@ -173,6 +169,7 @@ resource "aws_lambda_function" "fetch_stats" {
   environment {
     variables = {
       FIREHOSE_NAME = aws_kinesis_firehose_delivery_stream.stats_stream.name
+      API_KEY       = var.balldontlie_api_key
     }
   }
 

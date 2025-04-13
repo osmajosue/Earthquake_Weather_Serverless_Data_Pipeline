@@ -9,3 +9,8 @@ variable "aws_region" {
   type        = string
   default     = "us-east-1"
 }
+variable "balldontlie_api_key" {
+  description = "API key for accessing the Balldontlie API"
+  type        = string
+  sensitive   = true
+}
