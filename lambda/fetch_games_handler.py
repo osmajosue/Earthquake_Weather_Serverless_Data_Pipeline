@@ -5,8 +5,10 @@ import requests
 from datetime import datetime, timedelta
 
 FIREHOSE_NAME = os.environ["FIREHOSE_NAME"]
-API_URL = "https://www.balldontlie.io/api/v1/games"
+API_KEY = os.environ["API_KEY"]
+API_URL = "https://api.balldontlie.io/v1/games"
 firehose = boto3.client("firehose")
+
 
 def lambda_handler(event, context):
     try:
@@ -17,10 +19,11 @@ def lambda_handler(event, context):
         params = {
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
-            "per_page": 100
+            "per_page": 100,
         }
 
-        response = requests.get(API_URL, params=params)
+        headers = {"Authorization": API_KEY}
+        response = requests.get(API_URL, params=params, headers=headers)
         response.raise_for_status()
         games_data = response.json().get("data", [])
 
@@ -31,8 +34,7 @@ def lambda_handler(event, context):
         for record in games_data:
             payload = json.dumps(record) + "\n"
             firehose.put_record(
-                DeliveryStreamName=FIREHOSE_NAME,
-                Record={"Data": payload}
+                DeliveryStreamName=FIREHOSE_NAME, Record={"Data": payload}
             )
 
         print(f"✅ Ingested {len(games_data)} game records.")
