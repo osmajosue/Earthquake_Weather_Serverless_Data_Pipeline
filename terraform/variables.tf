@@ -1,16 +1,11 @@
-variable "project_prefix" {
-  description = "Prefix to name and group related resources"
-  type        = string
-  default     = "nba-pipeline"
-}
-
 variable "aws_region" {
-  description = "AWS region to deploy the infrastructure"
+  description = "AWS region for all resources"
   type        = string
   default     = "us-east-1"
 }
-variable "balldontlie_api_key" {
-  description = "API key for accessing the Balldontlie API"
+
+variable "project_prefix" {
+  description = "Prefix for naming AWS resources"
   type        = string
-  sensitive   = true
+  default     = "eq-weather-pipeline"
 }
