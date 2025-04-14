@@ -49,6 +49,33 @@ resource "aws_iam_policy" "lambda_firehose_policy" {
   })
 }
 
+# Extra policy for fetch_weather to List + Read S3 (for reading quake files)
+resource "aws_iam_policy" "lambda_s3_access_policy" {
+  name = "${var.project_prefix}_lambda_s3_policy"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject"
+        ],
+        Resource = [
+          "${aws_s3_bucket.raw_data.arn}",
+          "${aws_s3_bucket.raw_data.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_s3_access_policy_attach" {
+  role       = aws_iam_role.lambda_exec_role.name
+  policy_arn = aws_iam_policy.lambda_s3_access_policy.arn
+}
+
 resource "aws_iam_role_policy_attachment" "lambda_firehose_policy_attach" {
   role       = aws_iam_role.lambda_exec_role.name
   policy_arn = aws_iam_policy.lambda_firehose_policy.arn
@@ -133,13 +160,13 @@ resource "aws_lambda_function" "fetch_weather" {
   handler          = "fetch_weather.lambda_handler"
   runtime          = "python3.10"
   role             = aws_iam_role.lambda_exec_role.arn
-  timeout          = 60
+  timeout          = 120
 
   environment {
     variables = {
       RAW_BUCKET     = aws_s3_bucket.raw_data.bucket
-      QUAKE_PREFIX   = "raw/earthquakes/"
-      WEATHER_PREFIX = "raw/weather_data/"
+      QUAKE_PREFIX   = "earthquakes/"
+      WEATHER_PREFIX = "weather_data/"
     }
   }
 
