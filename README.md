@@ -1,45 +1,47 @@
-# NBA Serverless Data Pipeline (Terraform + AWS + Grafana)
+# Earthquake & Weather Serverless Data Pipeline (Terraform + AWS + Grafana)
 
 ## 📌 Overview
-A 100% serverless data engineering project built on AWS using Terraform. It ingests data from the **Balldontlie NBA API**, processes and transforms it using AWS Glue, analyzes it via Athena, and visualizes key insights in Grafana.
+A 100% serverless data engineering project built on AWS using Terraform. It ingests real-time **Earthquake data from USGS** and **Weather data from Open-Meteo**, processes and transforms it using AWS Glue, analyzes it via Athena, and visualizes key insights in Grafana.
 
 ---
 
 ## 📊 Architecture Diagram
-![NBA Serverless Architecture] Coming soon
+![Earthquake + Weather Serverless Architecture] Coming soon
 
 ---
 
 ## 🧩 Features
 - Scheduled ingestion using AWS Lambda + EventBridge
-- Real-time delivery via Kinesis Firehose
+- Real-time delivery via Kinesis Firehose (for earthquake events)
+- On-demand Lambda-based enrichment with weather data per location
 - Raw and processed data stored in S3
 - PySpark-based transformation in AWS Glue
 - AWS Glue Data Catalog for structured queries
-- Athena SQL for dashboard queries
-- Grafana visualization of key performance indicators
+- Athena SQL for analytical exploration
+- Grafana visualization for key environmental metrics
 
 ---
 
-## 📈 Business Questions Answered
-1. Which teams have the highest win percentage this season?
-2. Which players have the highest average points per game in the last 10 games?
-3. Which games had the closest score margins (nail-biters)?
-4. What is the scoring trend over time per team?
+## 📈 Questions Answered
+1. Where and when did the most recent earthquakes occur?
+2. Which regions experience the highest frequency of earthquakes?
+3. What are the weather conditions at recent earthquake locations?
+4. Is there any relationship between seismic activity and weather patterns?
 
 ---
 
 ## 🧱 Folder Structure
 ```bash
-nba-pipeline/
+earthquake-weather-pipeline/
 ├── terraform/
 │   ├── main.tf
 │   ├── variables.tf
 │   ├── outputs.tf
-│   ├── lambda.zip
-│   └── glue_job.py
+│   ├── glue_job.py
+│   └── *.zip (Lambda packages)
 ├── lambda/
-│   └── handler.py
+│   ├── fetch_earthquakes.py
+│   └── fetch_weather.py
 ├── athena/
 │   └── queries.sql
 ├── grafana/
@@ -53,41 +55,41 @@ nba-pipeline/
 ## 🚀 Deployment Instructions
 
 ### 1. Clone the repository
-Clone this GitHub repo and navigate to the directory.
+Clone this GitHub repo and navigate to the project directory.
 
 ### 2. Set up your environment
-Copy the `.env.example` to `.env` and configure variables such as AWS region, bucket name, etc.
+Copy `.env.example` to `.env` and configure AWS region and project prefix.
 
 ### 3. Deploy Infrastructure
-Deploy all infrastructure components, including Lambda, Kinesis, S3, Glue, and Athena, using Terraform.
+Use Terraform to deploy all components: Lambda, S3, Kinesis, Glue, and Athena.
 
-### 4. Test the Lambda
-Invoke the Lambda function manually or wait for the scheduled run to ingest NBA game data.
+### 4. Test Earthquake Lambda
+Invoke the Lambda manually or wait for the scheduled run to fetch earthquake data.
 
-### 5. Process Data with Glue
-Run the Glue job to transform and normalize the raw NBA data and store it in the processed S3 path.
+### 5. Fetch Weather Data
+Run the weather Lambda (or script) to enrich quake data with local conditions.
 
-### 6. Query with Athena
-Use Athena queries to explore the transformed data and prepare inputs for dashboards.
+### 6. Transform Data with Glue
+Run the Glue job to normalize and join earthquake + weather data.
 
-### 7. Visualize in Grafana
-Connect Grafana to Athena and import the provided dashboard template to display insights.
+### 7. Query and Visualize
+Use Athena to analyze data and Grafana to visualize insights.
 
 ---
 
 ## 🧠 Tech Stack
 - AWS Lambda, EventBridge, S3, Kinesis Firehose
-- AWS Glue (PySpark), Glue Crawlers, Glue Data Catalog
+- AWS Glue (PySpark), Glue Crawlers, Data Catalog
 - AWS Athena
 - Grafana
 - Terraform (IaC)
-- Balldontlie NBA API (https://www.balldontlie.io/)
+- Earthquake API (USGS): https://earthquake.usgs.gov/
+- Weather API (Open-Meteo): https://open-meteo.com/
 
 ---
 
 ## 💬 Notes
-- Terraform automates provisioning of all necessary AWS resources.
-- Balldontlie API is used for free, public access to NBA stats and player data.
-- Glue jobs can be enhanced for partitioning and incremental loads.
-- Retry logic should be implemented in Lambda to handle API rate limits gracefully.
-
+- Terraform provisions all cloud infrastructure automatically.
+- Earthquake data is pulled from the public USGS feed in GeoJSON format.
+- Weather enrichment uses latitude and longitude for contextual accuracy.
+- Partitioning, deduplication, and schema evolution are supported in Glue.
