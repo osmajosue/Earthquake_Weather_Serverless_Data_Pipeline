@@ -4,18 +4,31 @@ provider "aws" {
 
 # S3 Buckets
 resource "aws_s3_bucket" "raw_data" {
-  bucket        = "${var.project_prefix}-raw-data"
+  bucket        = "${var.bucket_prefix}-raw-data"
   force_destroy = true
 }
 
 resource "aws_s3_bucket" "processed_data" {
-  bucket        = "${var.project_prefix}-processed-data"
+  bucket        = "${var.bucket_prefix}-processed-data"
   force_destroy = true
 }
 
 resource "aws_s3_bucket" "script_bucket" {
-  bucket        = "${var.project_prefix}-scripts"
+  bucket        = "${var.bucket_prefix}-scripts"
   force_destroy = true
+}
+
+# Upload transformation_job.py script to the scripts bucket
+resource "aws_s3_object" "glue_script" {
+  bucket = aws_s3_bucket.script_bucket.bucket
+  key    = "glue/transformation_job.py"
+  source = "${path.module}/transformation_job.py"
+  etag   = filemd5("${path.module}/transformation_job.py")
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+  }
 }
 
 # IAM Role for Lambda Execution
@@ -222,20 +235,53 @@ resource "aws_iam_policy" "glue_s3_policy" {
   name = "${var.project_prefix}_glue_s3_policy"
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"
-      ],
-      Resource = [
-        "${aws_s3_bucket.raw_data.arn}",
-        "${aws_s3_bucket.raw_data.arn}/*",
-        "${aws_s3_bucket.processed_data.arn}",
-        "${aws_s3_bucket.processed_data.arn}/*",
-        "${aws_s3_bucket.script_bucket.arn}",
-        "${aws_s3_bucket.script_bucket.arn}/*"
-      ]
-    }]
+    Statement = [
+
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "${aws_s3_bucket.raw_data.arn}",
+          "${aws_s3_bucket.raw_data.arn}/*",
+          "${aws_s3_bucket.processed_data.arn}",
+          "${aws_s3_bucket.processed_data.arn}/*",
+          "${aws_s3_bucket.script_bucket.arn}",
+          "${aws_s3_bucket.script_bucket.arn}/*",
+          "${aws_s3_bucket.gold_data.arn}",
+          "${aws_s3_bucket.gold_data.arn}/*"
+        ]
+      },
+
+      {
+        Effect = "Allow",
+        Action = [
+          "athena:StartQueryExecution",
+          "athena:GetQueryExecution",
+          "athena:GetQueryResults"
+        ],
+        Resource = "*"
+      },
+
+      {
+        Effect = "Allow",
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:CreateTable",
+          "glue:UpdateTable",
+          "glue:GetPartition",
+          "glue:BatchGetPartition"
+        ],
+        Resource = "*"
+      }
+    ]
   })
 }
 
@@ -256,7 +302,7 @@ resource "aws_glue_job" "eq_weather_transform_job" {
 
   command {
     name            = "glueetl"
-    script_location = "s3://${aws_s3_bucket.script_bucket.bucket}/glue/glue_job.py"
+    script_location = "s3://${aws_s3_bucket.script_bucket.bucket}/glue/transformation_job.py"
     python_version  = "3"
   }
 
@@ -298,3 +344,193 @@ resource "aws_glue_crawler" "eq_weather_crawler" {
     ManagedBy   = "Terraform"
   }
 }
+
+# Gold/Semantic Layer S3 Bucket (for Iceberg)
+resource "aws_s3_bucket" "gold_data" {
+  bucket        = "${var.bucket_prefix}-gold-data"
+  force_destroy = true
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Glue Workflow
+resource "aws_glue_workflow" "eq_weather_workflow" {
+  name        = "${var.project_prefix}_workflow"
+  description = "Workflow for earthquake + weather data pipeline"
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+  }
+}
+
+resource "aws_s3_object" "quality_check_script" {
+  bucket = aws_s3_bucket.script_bucket.bucket
+  key    = "glue/quality_check.py"
+  source = "${path.module}/quality_check.py"
+  etag   = filemd5("${path.module}/quality_check.py")
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+  }
+}
+
+resource "aws_glue_job" "quality_check_job" {
+  name     = "${var.project_prefix}_quality_check"
+  role_arn = aws_iam_role.glue_role.arn
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${aws_s3_bucket.script_bucket.bucket}/glue/quality_check.py"
+    python_version  = "3"
+  }
+
+  default_arguments = {
+    "--TempDir"                 = "s3://${aws_s3_bucket.processed_data.bucket}/temp/"
+    "--job-language"            = "python"
+    "--enable-glue-datacatalog" = "true"
+  }
+
+  glue_version      = "4.0"
+  number_of_workers = 2
+  worker_type       = "G.1X"
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Upload Iceberg write script to S3
+resource "aws_s3_object" "write_to_gold_script" {
+  bucket = aws_s3_bucket.script_bucket.bucket
+  key    = "glue/write_to_gold.py"
+  source = "${path.module}/write_to_gold.py"
+  etag   = filemd5("${path.module}/write_to_gold.py")
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+  }
+}
+
+# Glue Job to append to Iceberg gold table
+resource "aws_glue_job" "write_to_gold_job" {
+  name     = "${var.project_prefix}_write_to_gold"
+  role_arn = aws_iam_role.glue_role.arn
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${aws_s3_bucket.script_bucket.bucket}/glue/write_to_gold.py"
+    python_version  = "3"
+  }
+
+  default_arguments = {
+    "--TempDir"                 = "s3://${aws_s3_bucket.gold_data.bucket}/temp/"
+    "--job-language"            = "python"
+    "--enable-glue-datacatalog" = "true"
+    "--enable-iceberg"          = "true"
+    "--datalake-formats"        = "iceberg"
+    "--iceberg.warehouse"       = "s3://${aws_s3_bucket.gold_data.bucket}/"
+  }
+
+  glue_version      = "4.0"
+  number_of_workers = 2
+  worker_type       = "G.1X"
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Trigger: Start Glue Transform Job (initial step in workflow)
+resource "aws_glue_trigger" "transform_trigger" {
+  name          = "${var.project_prefix}_transform_trigger"
+  type          = "ON_DEMAND"
+  workflow_name = aws_glue_workflow.eq_weather_workflow.name
+
+  actions {
+    job_name = aws_glue_job.eq_weather_transform_job.name
+  }
+}
+
+# Trigger: Run crawler after transform job completes
+resource "aws_glue_trigger" "crawler_trigger" {
+  name          = "${var.project_prefix}_crawler_trigger"
+  type          = "CONDITIONAL"
+  workflow_name = aws_glue_workflow.eq_weather_workflow.name
+
+  predicate {
+    conditions {
+      logical_operator = "EQUALS"
+      job_name         = aws_glue_job.eq_weather_transform_job.name
+      state            = "SUCCEEDED"
+    }
+  }
+
+  actions {
+    crawler_name = aws_glue_crawler.eq_weather_crawler.name
+  }
+}
+
+# Trigger: Run quality check after crawler completes
+resource "aws_glue_trigger" "quality_check_trigger" {
+  name          = "${var.project_prefix}_quality_check_trigger"
+  type          = "CONDITIONAL"
+  workflow_name = aws_glue_workflow.eq_weather_workflow.name
+
+  predicate {
+    conditions {
+      logical_operator = "EQUALS"
+      crawler_name     = aws_glue_crawler.eq_weather_crawler.name
+      crawl_state      = "SUCCEEDED"
+    }
+  }
+
+  actions {
+    job_name = aws_glue_job.quality_check_job.name
+  }
+}
+
+# Trigger: Run write-to-gold job after quality check job succeeds
+resource "aws_glue_trigger" "write_to_gold_trigger" {
+  name          = "${var.project_prefix}_write_to_gold_trigger"
+  type          = "CONDITIONAL"
+  workflow_name = aws_glue_workflow.eq_weather_workflow.name
+  predicate {
+    conditions {
+      logical_operator = "EQUALS"
+      job_name         = aws_glue_job.quality_check_job.name
+      state            = "SUCCEEDED"
+    }
+  }
+
+  actions {
+    job_name = aws_glue_job.write_to_gold_job.name
+  }
+}
+
+# Provide Athena workgroup and Bucket for storing query results
+resource "aws_athena_workgroup" "eq_weather_workgroup" {
+  name = "${var.project_prefix}_athena_workgroup"
+
+  configuration {
+    enforce_workgroup_configuration = true
+
+    result_configuration {
+      output_location = "s3://${aws_s3_bucket.processed_data.bucket}/athena-results/"
+    }
+  }
+
+  tags = {
+    Project     = var.project_prefix
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
+}
+

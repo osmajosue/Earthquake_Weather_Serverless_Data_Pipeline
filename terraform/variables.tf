@@ -7,5 +7,11 @@ variable "aws_region" {
 variable "project_prefix" {
   description = "Prefix for naming AWS resources"
   type        = string
-  default     = "eq-weather-pipeline"
+  default     = "eq_weather_pipeline"
+}
+
+variable "bucket_prefix" {
+  description = "Prefix for naming AWS resources"
+  type        = string
+  default     = "eq-weather"
 }

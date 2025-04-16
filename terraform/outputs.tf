@@ -37,3 +37,13 @@ output "glue_crawler_name" {
   description = "Glue crawler to catalog processed data"
   value       = aws_glue_crawler.eq_weather_crawler.name
 }
+
+output "gold_data_bucket" {
+  description = "S3 bucket for Iceberg-compatible gold data"
+  value       = aws_s3_bucket.gold_data.bucket
+}
+
+output "glue_workflow_name" {
+  description = "Glue workflow name"
+  value       = aws_glue_workflow.eq_weather_workflow.name
+}
