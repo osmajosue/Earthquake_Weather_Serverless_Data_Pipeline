@@ -1,7 +1,7 @@
 # Earthquake & Weather Serverless Data Pipeline (Terraform + AWS + Grafana)
 
 ## 📌 Overview
-This is a personal project to build a 100% serverless, cloud-native data pipeline on AWS using Terraform. It ingests real-time **Earthquake data from USGS** and enriches it with **Weather data from Open-Meteo**, processes and transforms it using AWS Glue and Apache Iceberg, analyzes it via Athena, and visualizes the results in Grafana.
+This is a personal project to build a 100% serverless, cloud-native data pipeline on AWS using Terraform. It ingests **Earthquake data from USGS** and enriches it with **Weather data from Open-Meteo**, processes and transforms it using AWS Glue and Apache Iceberg, analyzes it via Athena, and visualizes the results in Grafana.
 
 ---
 
