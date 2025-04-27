@@ -98,7 +98,7 @@ Enter:
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/your-org/earthquake-weather-pipeline.git
+git clone https://github.com/osmajosue/Earthquake_Weather_Serverless_Data_Pipeline.git
 cd earthquake-weather-pipeline
 ```
 
