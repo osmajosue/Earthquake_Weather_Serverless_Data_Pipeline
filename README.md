@@ -24,11 +24,14 @@ This is a personal project to build a 100% serverless, cloud-native data pipelin
 
 ---
 
-## 📈 Example Questions Answered
-- Where and when did recent earthquakes occur?
-- Which regions experience the highest frequency of earthquakes?
-- What were the weather conditions at earthquake locations?
-- Does earthquake magnitude correlate with temperature, humidity, or wind?
+## 📈 Questions Answered
+| Question | Data Source | Visualization Type |
+|:---|:---|:---|
+| **Where and when did the most recent earthquakes occur?** | Geomap query (`earthquake_geomap.sql`) | Geomap panel |
+| **What is the trend of earthquake magnitudes over time?** | Average Magnitude Over Time (`avg_magnitude_over_time.sql`) | Time series panel |
+| **How are earthquake magnitudes distributed?** | Magnitude Distribution query (`magnitude_distribution.sql`) | Bar chart panel |
+| **Is there a correlation between temperature and seismic activity?** | Temperature vs Magnitude (`temperature_vs_magnitude.sql`) | Table panel |
+
 
 ---
 
@@ -85,7 +88,6 @@ earthquake-weather-pipeline/
 ├── .gitignore
 └── README.md
 ```
-
 ---
 
 ## 🚀 Deployment Instructions
