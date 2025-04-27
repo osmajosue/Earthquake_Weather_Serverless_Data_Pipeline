@@ -1,0 +1,442 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "description": "Earthquake and Weather Insights Dashboard\n\nThis dashboard provides real-time and historical analytics for recent earthquakes enriched with local weather conditions.\n\nKey visualizations include:\n\n🌎 Geomap of earthquake locations with magnitude intensity\n\n📈 Time series trends of earthquake magnitudes over time\n\n📊 Distribution of earthquake magnitudes by frequency\n\n🔥 Correlation between temperature and seismic activity\n\nPowered by a 100% serverless AWS Data Pipeline (Lambda, Firehose, S3, Glue, Iceberg, Athena) and visualized in Grafana.\n\nTime range controls are available — queries refresh dynamically based on selected intervals.",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 14,
+    "links": [],
+    "panels": [
+        {
+            "datasource": {
+                "type": "grafana-athena-datasource",
+                "uid": "fej4xsk72qp6oc"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineWidth": 1,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "id": 4,
+            "options": {
+                "barRadius": 0,
+                "barWidth": 0.97,
+                "fullHighlight": false,
+                "groupWidth": 0.7,
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "auto",
+                "showValue": "auto",
+                "stacking": "none",
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "12.0.0-86898",
+            "targets": [
+                {
+                    "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                    },
+                    "datasource": {
+                        "type": "grafana-athena-datasource",
+                        "uid": "fej4xsk72qp6oc"
+                    },
+                    "format": 1,
+                    "rawSQL": "SELECT\r\n  CAST(magnitude AS DECIMAL(3,1)),\r\n  COUNT(*) AS quake_count\r\nFROM \r\n  \"eq_weather_pipeline_db\".\"earthquake_weather_iceberg\"\r\nWHERE\r\n  $__timeFilter(quake_time)\r\nGROUP BY\r\n  magnitude\r\nORDER BY\r\n  magnitude",
+                    "refId": "A"
+                }
+            ],
+            "title": "Magnitude Distribution",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "grafana-athena-datasource",
+                "uid": "fej4xsk72qp6oc"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "controls": {
+                    "mouseWheelZoom": true,
+                    "showAttribution": true,
+                    "showDebug": false,
+                    "showMeasure": false,
+                    "showScale": false,
+                    "showZoom": true
+                },
+                "layers": [
+                    {
+                        "config": {
+                            "showLegend": true,
+                            "style": {
+                                "color": {
+                                    "fixed": "dark-green"
+                                },
+                                "opacity": 0.4,
+                                "rotation": {
+                                    "fixed": 0,
+                                    "max": 360,
+                                    "min": -360,
+                                    "mode": "mod"
+                                },
+                                "size": {
+                                    "fixed": 5,
+                                    "max": 15,
+                                    "min": 2
+                                },
+                                "symbol": {
+                                    "fixed": "img/icons/marker/circle.svg",
+                                    "mode": "fixed"
+                                },
+                                "symbolAlign": {
+                                    "horizontal": "center",
+                                    "vertical": "center"
+                                },
+                                "textConfig": {
+                                    "fontSize": 12,
+                                    "offsetX": 0,
+                                    "offsetY": 0,
+                                    "textAlign": "center",
+                                    "textBaseline": "middle"
+                                }
+                            }
+                        },
+                        "location": {
+                            "mode": "auto"
+                        },
+                        "name": "Layer 1",
+                        "tooltip": true,
+                        "type": "markers"
+                    }
+                ],
+                "tooltip": {
+                    "mode": "details"
+                },
+                "view": {
+                    "allLayers": true,
+                    "id": "zero",
+                    "lat": 0,
+                    "lon": 0,
+                    "zoom": 1
+                }
+            },
+            "pluginVersion": "12.0.0-86898",
+            "targets": [
+                {
+                    "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                    },
+                    "datasource": {
+                        "type": "grafana-athena-datasource",
+                        "uid": "fej4xsk72qp6oc"
+                    },
+                    "format": 1,
+                    "rawSQL": "SELECT\r\n  latitude,\r\n  longitude,\r\n  magnitude,\r\n  quake_time\r\nFROM \r\n  \"eq_weather_pipeline_db\".\"earthquake_weather_iceberg\"\r\nWHERE\r\n  $__timeFilter(quake_time)\r\n  AND latitude IS NOT NULL\r\n  AND longitude IS NOT NULL",
+                    "refId": "A",
+                    "table": "earthquake_weather_iceberg"
+                }
+            ],
+            "title": "Earthquake Locations",
+            "type": "geomap"
+        },
+        {
+            "datasource": {
+                "type": "grafana-athena-datasource",
+                "uid": "fej4xsk72qp6oc"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 8
+            },
+            "id": 2,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "12.0.0-86898",
+            "targets": [
+                {
+                    "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                    },
+                    "datasource": {
+                        "type": "grafana-athena-datasource",
+                        "uid": "fej4xsk72qp6oc"
+                    },
+                    "format": 1,
+                    "rawSQL": "SELECT\r\n  $__timeGroup(quake_time, '1d') AS quake_day,\r\n  AVG(magnitude) AS avg_magnitude\r\nFROM \r\n  \"eq_weather_pipeline_db\".\"earthquake_weather_iceberg\"\r\nWHERE\r\n  $__timeFilter(quake_time)\r\nGROUP BY\r\n  $__timeGroup(quake_time, '1d')\r\nORDER BY\r\n  $__timeGroup(quake_time, '1d')",
+                    "refId": "A"
+                }
+            ],
+            "title": "Average Magnitude Over time",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "grafana-athena-datasource",
+                "uid": "fej4xsk72qp6oc"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 8
+            },
+            "id": 3,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.0.0-86898",
+            "targets": [
+                {
+                    "connectionArgs": {
+                        "catalog": "__default",
+                        "database": "__default",
+                        "region": "__default",
+                        "resultReuseEnabled": false,
+                        "resultReuseMaxAgeInMinutes": 60
+                    },
+                    "datasource": {
+                        "type": "grafana-athena-datasource",
+                        "uid": "fej4xsk72qp6oc"
+                    },
+                    "format": 1,
+                    "rawSQL": "SELECT\r\n  temperature_2m,\r\n  magnitude\r\nFROM \r\n  \"eq_weather_pipeline_db\".\"earthquake_weather_iceberg\"\r\nWHERE\r\n  $__timeFilter(quake_time)\r\n  AND temperature_2m IS NOT NULL\r\n  AND magnitude IS NOT NULL\r\nORDER BY\r\n  temperature_2m DESC",
+                    "refId": "A"
+                }
+            ],
+            "title": "Temperature VS Magnitude",
+            "type": "table"
+        }
+    ],
+    "preload": false,
+    "schemaVersion": 41,
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-30d",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Earthquake_Weather_data_pipeline",
+    "uid": "73604282-d19d-4aac-9513-a481f17d4ec5",
+    "version": 9
+}
