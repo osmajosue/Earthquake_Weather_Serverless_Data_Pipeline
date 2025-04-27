@@ -56,24 +56,34 @@ This is a personal project to build a 100% serverless, cloud-native data pipelin
 ## 🧱 Folder Structure
 ```bash
 earthquake-weather-pipeline/
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── transformation_job.py
-│   ├── quality_check.py
-│   ├── write_to_gold.py
-│   └── *.zip (Lambda deployment packages)
-├── lambda/
-│   ├── fetch_earthquakes.py
-│   └── fetch_weather.py
 ├── athena/
-│   ├── queries.sql
-│   └── dashboard_queries.sql
+│   ├── avg_magnitude_over_time.sql
+│   ├── earthquake_geomap.sql
+│   ├── magnitude_distribution.sql
+│   └── temperature_vs_magnitude.sql
 ├── grafana/
 │   └── dashboard.json
-├── README.md
-└── .env.example
+├── lambda/
+│   ├── fetch_earthquakes.py
+│   ├── fetch_weather.py
+│   └── requirements.txt
+├── terraform/
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── quality_check.py
+│   ├── transformation_job.py
+│   ├── variables.tf
+│   ├── write_to_gold.py
+│   ├── fetch_earthquakes.zip
+│   ├── fetch_weather.zip
+│   ├── terraform.lock.hcl
+│   ├── terraform.tfstate
+│   └── terraform.tfstate.backup
+├── .terraform/ (local)
+├── .env
+├── .env.example
+├── .gitignore
+└── README.md
 ```
 
 ---
